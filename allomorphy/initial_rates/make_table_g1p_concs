@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Usage: 
+# km_make_table_g1p_concs  average_mvals g1p_concs
+
+if [ -e g1p_concs.txt ] 
+then
+	echo	
+	echo "Reading substrate concs from g1p_concs.txt"
+	echo
+else
+	echo
+	echo "No g1p_concs.txt found. Please create txt file with g1p concentrations in the format:"
+	echo
+	echo "platereader_column (2 digit, e.g. 01)     g1p_conc"
+	exit 0
+fi
+
+nawk '
+FNR>1 && FILENAME==file1 {val1[$1]=$0}
+FNR>1 && FILENAME==file2 {val2[$1]=$2}
+NR==1 {print "g1p_conc", $0}
+END {
+  for (x in val1) { 
+    if (x in val2) {print val2[x], val1[x]}
+    }
+  }
+' OFS="    " file1=$1 file2=$2 $1 $2 | nawk 'NR==1 {print $0} NR>1 {print $0 | "sort -nk 1"}' > km_curve_table

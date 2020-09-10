@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Takes processed platereader data "calculated_output.csv" and runs all the data through csv_handler.py to enable manipulation
+# of individual data series.
+
+get_data () {
+	# function takes a file as argument and finds
+	echo "Opening "$1"..."
+	fields=`nawk 'END {print NF}' $1`	# gets the number of fields in the file
+
+	i=2
+	while [[ $i -lt $fields+1 ]] ;
+		do filename="file"$filenum"_"`nawk 'NR==1 {print $field}' field=$i $1` ; # creates uniq fname for each field (p'reader well) in each file
+		nawk '{print $1, $field}' field=$i $1 > $filename ;	# makes a file with the times data and the p'reader data for that well
+		array[$j]=$filename ;	# creates array with a unique number identifying a different file
+		let "i+=1" ;
+		let "j+=1" ;
+	done
+	echo "Processed "$1
+}
+
+
+# checks for 'points_table.txt' file containing the fit data.
+
+if [ -e ./points_table.txt ]
+then
+	echo "points_table.txt found. Using to fit initial rates."
+else
+	echo "points_table.txt not found. Please supply a points_table.txt in the working directory containting points to fit initial rates over. Use make_points_table.py calculated_output.txt"
+	exit 1
+fi
+
+filenum=1
+declare -a array
+j=1		# j is incremented each time a new column in a file is added to the array, it does not reset for each new file
+for file in $@
+	do get_data $file ;
+	let "filenum+=1" ;
+done
+
+mkdir fit_images
+
+multi_csv_linefit.py ${array[@]:0} points_table.txt 	# passes an array with {1: file1_well1, 2: file1_well2...} to the csv_handler for plotting
+
+
+
+###  If you want to manipulate the data files individually, hash out this next line  ###
+ 
+rm ${array[@]:0} 	# removes all the tmeporary csv files which were created for csv_analyse to be able to handle them
